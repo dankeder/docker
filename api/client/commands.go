@@ -48,6 +48,7 @@ func (cli *DockerCli) CmdHelp(args ...string) error {
 		{"attach", "Attach to a running container"},
 		{"build", "Build a container from a Dockerfile"},
 		{"commit", "Create a new image from a container's changes"},
+		{"cat", "Print contents of a file from the container's filesystem to stdout"},
 		{"cp", "Copy files/folders from the containers filesystem to the host path"},
 		{"diff", "Inspect changes on a container's filesystem"},
 		{"events", "Get real time events from the server"},
@@ -2060,6 +2061,56 @@ func (cli *DockerCli) CmdCp(args ...string) error {
 	if statusCode == 200 {
 		if err := archive.Untar(stream, copyData.Get("HostPath"), nil); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func (cli *DockerCli) CmdCat(args ...string) error {
+	cmd := cli.Subcmd("cat", "CONTAINER PATH", "Print contents of a file in a container")
+	if err := cmd.Parse(args); err != nil {
+		return nil
+	}
+
+	if cmd.NArg() != 2 {
+		cmd.Usage()
+		return nil
+	}
+
+	var copyData engine.Env
+	copyData.Set("Resource", cmd.Arg(1))
+
+	stream, statusCode, err := cli.call("POST", "/containers/"+cmd.Arg(0)+"/copy", copyData, false)
+	if stream != nil {
+		defer stream.Close()
+	}
+	if statusCode == 404 {
+		return fmt.Errorf("No such container: %v", cmd.Arg(0))
+	}
+	if err != nil {
+		return err
+	}
+
+	if statusCode == 200 {
+		reader, err := archive.UntarFile(stream, cmd.Arg(1), nil);
+		if err != nil {
+			return err
+		}
+
+		buf := make([]byte, 1024)
+		for {
+			n, err := reader.Read(buf)
+			if err != nil && err != io.EOF {
+				return err
+			}
+			if n == 0 {
+				break
+			}
+
+			_, err = fmt.Printf("%s", buf[:n])
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
