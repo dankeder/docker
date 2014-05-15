@@ -365,8 +365,9 @@ func TarFilter(srcPath string, options *TarOptions) (io.ReadCloser, error) {
 	return pipeReader, nil
 }
 
-// Untar the specified file from the stream and return its data as a byte string
-func UntarFile(archive io.Reader, fpath string, options *TarOptions) (io.Reader, error) {
+// Untar the specified file `fpath` from the stream `archive` and return a io.Reader containing
+// the file contents.
+func UntarFile(archive io.Reader, fpath string) (io.Reader, error) {
 	if archive == nil {
 		return nil, fmt.Errorf("Empty archive")
 	}

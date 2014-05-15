@@ -2092,7 +2092,7 @@ func (cli *DockerCli) CmdCat(args ...string) error {
 	}
 
 	if statusCode == 200 {
-		reader, err := archive.UntarFile(stream, cmd.Arg(1), nil);
+		reader, err := archive.UntarFile(stream, cmd.Arg(1));
 		if err != nil {
 			return err
 		}
